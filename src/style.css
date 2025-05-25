@@ -1,0 +1,22 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: radial-gradient(circle, rgba(114, 145, 166, 1) 0%, rgba(18, 65, 99, 1) 30%, rgba(9, 32, 49, 1) 55%, rgba(0, 0, 0, 1) 87%);
+}
+
+.blur {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 100vw;
+  backdrop-filter: blur(20px);
+  pointer-events: none;
+  /* Radial gradient mask: transparent center, opaque edge */
+  -webkit-mask-image: radial-gradient(circle, transparent 0%, black 70%);
+  mask-image: radial-gradient(circle, transparent 0%, black 70%);
+  /* background: radial-gradient(circle, white 0%, black 100%) ; */
+}
