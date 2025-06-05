@@ -16,29 +16,6 @@ export default class Flower {
         this.clickedCircles = []
         this.hoverRadius = 30
 
-        this.gamme = [
-            "D1",
-            "E1",
-            "F1",
-            "G1",
-            "A1",
-            "B1",
-            "C2",
-            "D2",
-            "E2",
-            "F2",
-            "G2",
-            "A2",
-            "B2",
-            "C3",
-            "D3",
-            "E3",
-            "F3",
-            "G3",
-            "A3",
-            "B3",
-        ]
-
         this.Cmaj7 = ["C2", "E2", "G2", "B2"]
         this.Am7 = ["A2", "C2", "E2", "G2"]
         this.Dm7 = ["D2", "F2", "A2", "C2"]
@@ -609,8 +586,6 @@ export default class Flower {
                         ]
                     this.currentIntersectionNoteIndex = 0
                 }
-            } else {
-                note = this.gamme[0]
             }
 
             let volume = 1
