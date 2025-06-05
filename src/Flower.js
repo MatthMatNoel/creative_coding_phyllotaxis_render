@@ -113,6 +113,7 @@ export default class Flower {
             decay: 2,
             wet: 0.2,
         })
+
         // Delay
         this.delay = new Tone.PingPongDelay({
             delayTime: "8n",

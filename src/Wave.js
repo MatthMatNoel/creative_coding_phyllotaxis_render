@@ -24,23 +24,26 @@ export default class Wave {
         this.hoverTriggerCooldown = hoverTriggerCooldown
         this.lastHoverTriggerTime = 0
 
-        this.popGain = new Tone.Gain(1)
         this.popCompressor = new Tone.Compressor({
             threshold: -24,
             ratio: 4,
             attack: 0.03,
             release: 0.25,
         })
-        this.popLimiter = new Tone.Limiter(-6)
+        this.popLimiter = new Tone.Limiter(0)
+        this.popReverb = new Tone.Reverb({
+            decay: 2,
+            wet: 0.2,
+        })
 
         // Connect
         this.popPlayer = new Tone.Player({
             url: "/sounds/Pop_01.mp3",
             autostart: false,
         })
-            .connect(this.popGain)
             .connect(this.popCompressor)
             .connect(this.popLimiter)
+            .connect(this.popReverb)
             .toDestination()
 
         // Track which pairs have already triggered the pop
@@ -149,15 +152,21 @@ export default class Wave {
                     d < c1.radius + c2.radius &&
                     d > Math.abs(c1.radius - c2.radius)
                 ) {
-                    // Only trigger pop if this is the first intersection
+                    // Trigger pop sound
                     if (!this.intersectedPairs.has(pairKey)) {
-                        const maxLifetime = 300
-                        const baseVolume = Math.max(
-                            0.1,
-                            c1.lifetime / maxLifetime
+                        const intersectionRadius = c1.lifetime * 0.2
+                        const maxIntersectionRadius = 60
+                        const minDb = -15
+                        const maxDb = 5
+                        const ratio = Math.max(
+                            0,
+                            Math.min(
+                                1,
+                                intersectionRadius / maxIntersectionRadius
+                            )
                         )
-                        const overallPopVolume = 0.1
-                        this.popGain.gain.value = baseVolume * overallPopVolume
+                        this.popPlayer.volume.value =
+                            minDb + (maxDb - minDb) * ratio
 
                         if (this.popPlayer.loaded) {
                             this.popPlayer.playbackRate =
