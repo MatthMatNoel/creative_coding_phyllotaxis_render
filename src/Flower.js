@@ -10,12 +10,10 @@ export default class Flower {
         this.height = height
 
         this.opacity = 1
-        this.creationTime = Date.now()
 
         this.points = []
         this.originalPoints = []
         this.clickedCircles = []
-        this.sampler = null
         this.hoverRadius = 30
 
         this.scale = [
@@ -68,17 +66,14 @@ export default class Flower {
         this.currentIntersectionNoteIndex = 0
 
         this.lastHoverTriggerTime = 0
-        this.hoverTriggerCooldown = 100 // milliseconds
+        this.hoverTriggerCooldown = 100
 
-        this.currentNoteIndex = 0
-        this.noteDirection = 1 // 1 for up, -1 for down
-
-        this.bpm = 240 // Default BPM
+        this.bpm = 240
         this.playingPoint = 1
 
         this.echelle = 30
         this.echelleOscillationSpeed = 0.01
-        this.time = 0 // Time tracker for oscillation$
+        this.time = 0
 
         this.glowBlur = 100
         this.glowColor = "rgba(255, 255, 255, 1)"
@@ -87,18 +82,8 @@ export default class Flower {
     }
 
     setup() {
-        // Add a compressor to reduce dynamic range
-        this.compressor = new Tone.Compressor({
-            threshold: -24, // Start compressing at -24 dB
-            ratio: 4, // Compression ratio
-            attack: 0.03, // Attack time in seconds
-            release: 0.25, // Release time in seconds
-        })
-
-        // Add a limiter to prevent saturation
-        this.limiter = new Tone.Limiter(-6) // Limit the output to -6 dB
-
-        this.sampler = new Tone.Sampler({
+        // Hover sampler
+        this.hoverSampler = new Tone.Sampler({
             urls: {
                 A2: "Another_Dimension_A2.mp3",
                 B2: "Another_Dimension_B2.mp3",
@@ -110,20 +95,11 @@ export default class Flower {
                 F2: "Another_Dimension_F2.mp3",
                 G2: "Another_Dimension_G2.mp3",
             },
-            // urls: {
-            //     C2: "Midnight_Mallets_C2.mp3",
-            //     D2: "Midnight_Mallets_D2.mp3",
-            //     E2: "Midnight_Mallets_E2.mp3",
-            //     F2: "Midnight_Mallets_F2.mp3",
-            //     G2: "Midnight_Mallets_G2.mp3",
-            //     A2: "Midnight_Mallets_A2.mp3",
-            //     B2: "Midnight_Mallets_B2.mp3",
-            //     C3: "Midnight_Mallets_C3.mp3",
-            // },
-            release: 1, // Smooth release for natural sound
-            baseUrl: "/sounds/", // Ensure the base URL points to the correct directory
+            release: 1,
+            baseUrl: "/sounds/",
         })
 
+        // Random sampler
         this.randomSampler = new Tone.Sampler({
             urls: {
                 C2: "Midnight_Mallets_C2.mp3",
@@ -135,19 +111,11 @@ export default class Flower {
                 B2: "Midnight_Mallets_B2.mp3",
                 C3: "Midnight_Mallets_C3.mp3",
             },
-            // urls: {
-            //     C2: "Particle_Accelerator_C2.mp3",
-            //     D2: "Particle_Accelerator_D2.mp3",
-            //     E2: "Particle_Accelerator_E2.mp3",
-            //     F2: "Particle_Accelerator_F2.mp3",
-            //     G2: "Particle_Accelerator_G2.mp3",
-            //     A2: "Particle_Accelerator_A2.mp3",
-            //     B2: "Particle_Accelerator_B2.mp3",
-            // },
             release: 1,
             baseUrl: "/sounds/",
         })
 
+        // Intersection Sampler
         this.intersectionSampler = new Tone.Sampler({
             urls: {
                 A2: "Dark_Glide_Bass_A2.mp3",
@@ -164,19 +132,31 @@ export default class Flower {
             baseUrl: "/sounds/",
         })
 
-        // Add effects for a Hang-like resonance
+        // Reverb
         this.reverb = new Tone.Reverb({
-            decay: 2, // Longer decay for a resonant effect
-            wet: 0.2, // Higher wet mix for more pronounced reverb
+            decay: 2,
+            wet: 0.2,
         })
+        // Delay
         this.delay = new Tone.PingPongDelay({
-            delayTime: "8n", // Subtle rhythmic delay
-            feedback: 0.15, // Moderate feedback for depth
-            wet: 0.1, // Wet/dry mix
+            delayTime: "8n",
+            feedback: 0.15,
+            wet: 0.1,
         })
 
-        // Connect the sampler to the effects chain and destination
-        this.sampler.chain(
+        // Compressor
+        this.compressor = new Tone.Compressor({
+            threshold: -24,
+            ratio: 4, // Compression ratio
+            attack: 0.03, // Attack time in seconds
+            release: 0.25, // Release time in seconds
+        })
+
+        // Limiter
+        this.limiter = new Tone.Limiter(-6) // Limit the output to -6 dB
+
+        // Connect hover sampler
+        this.hoverSampler.chain(
             this.reverb,
             this.delay,
             this.compressor,
@@ -184,7 +164,7 @@ export default class Flower {
             Tone.Destination
         )
 
-        // Chain effects for the randomSampler (optional, similar to main sampler)
+        // Connect random sampler
         this.randomSampler.chain(
             this.reverb,
             this.delay,
@@ -193,6 +173,7 @@ export default class Flower {
             Tone.Destination
         )
 
+        // Connect intersection sampler
         this.intersectionSampler.chain(
             this.reverb,
             this.delay,
@@ -201,40 +182,42 @@ export default class Flower {
             Tone.Destination
         )
 
-        // Add a constant oscillator sound
+        // Oscillator
         this.oscillator = new Tone.Oscillator({
             type: "sine",
-            frequency: 200, // Frequency in Hz (A4 note)
+            frequency: 200,
             volume: -30,
         }).toDestination()
 
         this.oscillator.start()
 
-        // Add a new synth for the deep aquatic sound
+        // Deep Synth
         this.deepSynth = new Tone.Synth({
             oscillator: {
-                type: "triangle", // Triangle wave for a deep sound
+                type: "triangle",
             },
             envelope: {
-                attack: 0.3, // Smooth fade-in
+                attack: 0.3,
                 decay: 0.5,
                 sustain: 0.4,
-                release: 2, // Long release for a fading effect
+                release: 2,
             },
         })
 
-        // Add effects for the deep aquatic sound
+        // Deep synth reverb
         this.deepReverb = new Tone.Reverb({
-            decay: 8, // Longer decay for a deeper echo
+            decay: 8,
             wet: 0.8,
         })
+
+        // Deep synth Filter
         this.deepFilter = new Tone.Filter({
             type: "lowpass",
-            frequency: 80, // Lower cutoff frequency for a deep sound
+            frequency: 80,
             rolloff: -24,
         })
 
-        // Connect the deep synth to its effects chain
+        // Connect deep synth
         this.deepSynth.chain(
             this.deepReverb,
             this.deepFilter,
@@ -288,6 +271,8 @@ export default class Flower {
     initializePoints() {
         this.points = []
         this.originalPoints = []
+
+        // Phyllotaxis flower !!!!
         for (let i = 0; i < this.numPoints; i++) {
             const angle =
                 i * (this.useGoldenAngle ? this.goldenAngle : this.customAngle)
@@ -474,24 +459,7 @@ export default class Flower {
                     point.repulsionForce.x += (dx / distance) * forceMagnitude
                     point.repulsionForce.y += (dy / distance) * forceMagnitude
 
-                    // point.isFilled = true
-                    // point.radius = Math.max(
-                    //     this.circleRadius,
-                    //     this.circleRadius + forceMagnitude * 0.3 // Scale the radius based on force
-                    // )
                     point.radius = 20
-
-                    // const lowerNote = point.note.replace(
-                    //     /(\d+)/,
-                    //     (match) => parseInt(match) - 1
-                    // )
-                    // // Use a short duration for a "bubble" effect
-                    // this.sampler.triggerAttackRelease(
-                    //     lowerNote,
-                    //     "16n",
-                    //     undefined,
-                    //     0.15 // Lower volume for subtlety
-                    // )
 
                     setTimeout(() => {
                         point.isFilled = false
@@ -672,7 +640,7 @@ export default class Flower {
             const sampler =
                 triggerType === "intersection"
                     ? this.intersectionSampler
-                    : this.sampler
+                    : this.hoverSampler
 
             sampler.triggerAttackRelease(
                 note,
