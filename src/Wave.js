@@ -10,7 +10,7 @@ export default class Wave {
         deepSynth,
         glowBlur,
         glowColor,
-        options = {}
+        hoverTriggerCooldown
     ) {
         this.ctx = ctx
         this.points = points
@@ -20,11 +20,11 @@ export default class Wave {
         this.deepSynth = deepSynth
         this.glowBlur = glowBlur
         this.glowColor = glowColor
-        this.hoverTriggerCooldown = options.hoverTriggerCooldown || 100
+        this.hoverTriggerCooldown = hoverTriggerCooldown
         this.lastHoverTriggerTime = 0
     }
 
-    createWave(mouseX, mouseY) {
+    drawWave(mouseX, mouseY) {
         const newCircle = new Circle(
             mouseX,
             mouseY,
@@ -42,7 +42,7 @@ export default class Wave {
         this.deepSynth.triggerAttackRelease(randomFrequency, "2n")
     }
 
-    drawWaves() {
+    setRepulsionForce() {
         // Draw waves and remove expired ones
         this.clickedCircles = this.clickedCircles.filter((circle) => {
             if (!circle.hitPoints) {

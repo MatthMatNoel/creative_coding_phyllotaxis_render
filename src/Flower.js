@@ -234,11 +234,7 @@ export default class Flower {
             this.deepSynth,
             this.glowBlur,
             this.glowColor,
-            {
-                glowBlur: this.glowBlur,
-                glowColor: this.glowColor,
-                hoverTriggerCooldown: this.hoverTriggerCooldown,
-            }
+            this.hoverTriggerCooldown
         )
 
         // Wait for user interaction to start the Tone.Transport
@@ -359,7 +355,7 @@ export default class Flower {
         this.drawPoint()
 
         // Draw waves
-        this.wave.drawWaves()
+        this.wave.setRepulsionForce()
 
         // Draw intersection points
         this.wave.drawIntersection(
@@ -629,7 +625,7 @@ export default class Flower {
         const mouseY = event.clientY - rect.top
 
         // Waves
-        this.wave.createWave(mouseX, mouseY)
+        this.wave.drawWave(mouseX, mouseY)
 
         // Start dragging
         this.isDragging = true
