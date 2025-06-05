@@ -16,7 +16,7 @@ export default class Flower {
         this.clickedCircles = []
         this.hoverRadius = 30
 
-        this.scale = [
+        this.gamme = [
             "D1",
             "E1",
             "F1",
@@ -236,7 +236,6 @@ export default class Flower {
         this.linearRadius = false
         this.scaleRadius = false
         this.inverseScaling = false
-        this.circleOpacity = 0.5
 
         // Stroke
         this.pointConnectionLenght = 5
@@ -307,17 +306,18 @@ export default class Flower {
             randomIndices.add(randomIndex)
         }
 
-        // Trigger the points corresponding to the selected indices
-        let delay = 0 // Initialize delay
+        // Trigger the points
+        let delay = 0
         randomIndices.forEach((index) => {
             const randomPoint = this.points[index]
             this.triggerRandomChordPoint(randomPoint, delay)
-            delay += 0.15 // Add a small delay (50ms) between each note
+            delay += 0.15
         })
     }
 
     triggerRandomChordPoint(point, delay = 0) {
         const note = this.currentRandomChord[this.currentRandomNoteIndex]
+
         this.currentRandomNoteIndex++
         if (this.currentRandomNoteIndex >= this.currentRandomChord.length) {
             this.currentRandomChordIndex =
@@ -326,6 +326,7 @@ export default class Flower {
                 this.randomChords[this.currentRandomChordIndex]
             this.currentRandomNoteIndex = 0
         }
+
         // Use the randomSampler for random notes
         this.randomSampler.triggerAttackRelease(
             note,
@@ -333,55 +334,48 @@ export default class Flower {
             Tone.now() + delay,
             0.03
         )
+
         point.isFilled = true
         point.radius = 20
+
         setTimeout(() => {
             point.isFilled = false
         }, 500)
     }
 
-    setBPM(newBPM) {
-        this.bpm = newBPM
-        Tone.Transport.bpm.value = newBPM
-    }
-
     draw() {
+        // Changing phyllotaxis angle
         this.customAngle += 0.00002
 
-        // Oscillate this.echelle between 15 and 25
+        // Breathing scale
         this.time += this.echelleOscillationSpeed
-        this.echelle = 30 + 3 * Math.sin(this.time) // Oscillates between 15 and 25
+        this.echelle = 30 + 3 * Math.sin(this.time)
 
-        // Apply spring force to points
+        // Spring force
         this.applySpringForce()
 
-        // Apply attraction force only if dragging
+        // Attraction force if dragging
         if (this.isDragging && this.attractionPoint) {
             this.applyAttractionForce()
         }
 
+        // Draw lines
         this.drawLines(this.points)
 
-        // Draw all points
+        // Draw phyllotaxis points
         this.drawPoint()
 
+        // Draw waves
         this.drawWave()
 
+        // Draw intersection points
         this.drawIntersectionPoint()
-
-        // Gradually fade the repulsion force for each point
-        this.points.forEach((point) => {
-            point.repulsionForce.x *= 0.95 // Reduce the force over time
-            point.repulsionForce.y *= 0.95
-            point.x += point.repulsionForce.x // Apply the force to the point's position
-            point.y += point.repulsionForce.y
-        })
     }
 
     drawPoint() {
-        // Gradually shrink triggered points' radius back to normal
+        // Shrink triggered points back to normal
         this.points.forEach((point, i) => {
-            // Only shrink if radius is larger than normal
+            // Only if radius is larger than normal
             if (point.radius > this.circleRadius) {
                 point.radius = point.radius * 0.97 + this.circleRadius * 0.03
                 if (Math.abs(point.radius - this.circleRadius) < 0.5) {
@@ -389,13 +383,14 @@ export default class Flower {
                 }
             }
 
-            // --- Glow effect for triggered points ---
+            // Glow effect
             if (point.isFilled) {
                 this.ctx.save()
                 this.ctx.shadowBlur = this.glowBlur
                 this.ctx.shadowColor = this.glowColor
             }
 
+            // Draw circles
             const circle = new Circle(
                 point.x,
                 point.y,
@@ -417,45 +412,43 @@ export default class Flower {
     }
 
     drawWave() {
-        // Draw all clicked circles and remove expired ones
+        // Draw waves and remove expired ones
         this.clickedCircles = this.clickedCircles.filter((circle) => {
             if (!circle.hitPoints) {
-                circle.hitPoints = new Set() // Initialize a set to track affected points
+                circle.hitPoints = new Set()
             }
 
             circle.draw(this.ctx)
 
-            // Trigger repulsion wave for points within the circle's radius
+            // Trigger repulsion wave for points in the wave radius
             this.points.forEach((point, index) => {
                 const dx = point.x - circle.x
                 const dy = point.y - circle.y
                 const distance = Math.sqrt(dx ** 2 + dy ** 2)
 
                 if (distance < circle.radius && !circle.hitPoints.has(index)) {
-                    // Mark the point as affected by this wave
+                    // Mark the point as affected
                     circle.hitPoints.add(index)
 
-                    // Calculate the age of the wave
+                    // Calculate age
                     const waveAge = 300 - circle.lifetime
 
-                    // Scale the force magnitude inversely with the wave's age
+                    // Scale the force compared to the age
                     const waveAgeFactor = 1 - waveAge / 300
 
-                    // Smooth the distance factor using a quadratic function
                     const normalizedDistance = distance / circle.radius
                     const distanceFactor = Math.max(
                         0.2,
                         1 - normalizedDistance ** 2
-                    ) // Quadratic falloff with a minimum threshold
+                    )
 
-                    // Combine the factors to calculate the force magnitude
                     let forceMagnitude = waveAgeFactor * distanceFactor * 70
 
-                    // Apply a threshold to the force magnitude
-                    const maxForce = 20 // Set the maximum allowed force
+                    // Threshold
+                    const maxForce = 20
                     forceMagnitude = Math.min(forceMagnitude, maxForce)
 
-                    // Apply the repulsion force
+                    // Apply repulsion force
                     point.repulsionForce.x += (dx / distance) * forceMagnitude
                     point.repulsionForce.y += (dy / distance) * forceMagnitude
 
@@ -463,17 +456,24 @@ export default class Flower {
 
                     setTimeout(() => {
                         point.isFilled = false
-                        // point.radius = this.circleRadius
                     }, 500)
                 }
             })
 
-            return circle.lifetime > 0 // Keep circles with remaining lifetime
+            return circle.lifetime > 0
+        })
+
+        // Fade the repulsion force for each point
+        this.points.forEach((point) => {
+            point.repulsionForce.x *= 0.95
+            point.repulsionForce.y *= 0.95
+            point.x += point.repulsionForce.x
+            point.y += point.repulsionForce.y
         })
     }
 
     drawIntersectionPoint() {
-        // --- Detect and draw intersections between waves ---
+        // Detect intersections between waves
         for (let i = 0; i < this.clickedCircles.length; i++) {
             for (let j = i + 1; j < this.clickedCircles.length; j++) {
                 const c1 = this.clickedCircles[i]
@@ -482,7 +482,7 @@ export default class Flower {
                 const dy = c2.y - c1.y
                 const d = Math.sqrt(dx * dx + dy * dy)
 
-                // Check if circles intersect
+                // Check if wave intersect
                 if (
                     d < c1.radius + c2.radius &&
                     d > Math.abs(c1.radius - c2.radius)
@@ -515,17 +515,15 @@ export default class Flower {
                     this.ctx.fill()
                     this.ctx.restore()
 
-                    // --- Trigger only one point per intersection circle per frame ---
                     const intersectionRadius = c1.lifetime * 0.2
                     const maxIntersectionRadius = 60
 
-                    // Check cooldown before triggering
                     const now = Date.now()
                     if (
                         now - this.lastHoverTriggerTime <
                         this.hoverTriggerCooldown
                     ) {
-                        continue // Skip triggering if cooldown not elapsed
+                        continue
                     }
 
                     let noteTriggered = false
@@ -533,6 +531,7 @@ export default class Flower {
                         [xs1, ys1],
                         [xs2, ys2],
                     ]
+
                     for (const [ix, iy] of intersectionCenters) {
                         const hitPoint = this.points.find((point) => {
                             const pdx = point.x - ix
@@ -565,7 +564,7 @@ export default class Flower {
         delay = 0,
         intersectionRadius = null,
         maxIntersectionRadius = null,
-        triggerType = "hover" // "hover" or "intersection"
+        triggerType = "hover"
     ) {
         const currentTime = Date.now()
         if (
@@ -578,7 +577,6 @@ export default class Flower {
 
             let note
             if (triggerType === "hover") {
-                // Pick a random chord from hoverChords
                 if (
                     !this.currentHoverChord ||
                     this.currentHoverNoteIndex == null ||
@@ -612,7 +610,7 @@ export default class Flower {
                     this.currentIntersectionNoteIndex = 0
                 }
             } else {
-                note = this.scale[0] // fallback
+                note = this.gamme[0]
             }
 
             let volume = 1
@@ -630,13 +628,12 @@ export default class Flower {
                 volume = adjustedDistanceFactor
             }
 
-            // Make intersection notes louder
+            // Intersection notes louder
             let volumeMultiplier = 0.1
             if (triggerType === "intersection") {
                 volumeMultiplier = 0.3
             }
 
-            // Use intersectionSampler for intersection, sampler otherwise
             const sampler =
                 triggerType === "intersection"
                     ? this.intersectionSampler
@@ -667,6 +664,86 @@ export default class Flower {
         this.ctx.stroke()
     }
 
+    applySpringForce() {
+        let totalWeightedSpeed = 0
+        let totalWeight = 0
+
+        this.points.forEach((point, i) => {
+            const desired = this.calculateDesiredPosition(i)
+
+            const dx = desired.x - point.x
+            const dy = desired.y - point.y
+
+            // Apply spring force
+            point.x += dx * this.springStrength
+            point.y += dy * this.springStrength
+
+            // Calculate speed
+            const speed = Math.sqrt(
+                Math.pow(point.x - (point.previousX || point.x), 2) +
+                    Math.pow(point.y - (point.previousY || point.y), 2)
+            )
+
+            // Calculate the weight of the point for the oscillator
+            const weight = speed * speed
+            totalWeightedSpeed += speed * weight
+            totalWeight += weight
+
+            // Update previous position
+            point.previousX = point.x
+            point.previousY = point.y
+        })
+
+        const weightedAverageSpeed =
+            totalWeight > 0 ? totalWeightedSpeed / totalWeight : 0
+
+        const scaledSpeed = weightedAverageSpeed * 0.2
+
+        // Map the scaled speed to a frequency range
+        const minFrequency = 200
+        const maxFrequency = 800
+        const mappedFrequency =
+            minFrequency + scaledSpeed * (maxFrequency - minFrequency)
+
+        // Update the oscillator frequency
+        this.oscillator.frequency.value = Math.min(
+            mappedFrequency,
+            maxFrequency
+        )
+
+        if (!this.recentFrequencies) {
+            this.recentFrequencies = []
+        }
+        this.recentFrequencies.push(mappedFrequency)
+        if (this.recentFrequencies.length > 10) {
+            this.recentFrequencies.shift()
+        }
+
+        const meanFrequency =
+            this.recentFrequencies.reduce((sum, freq) => sum + freq, 0) /
+            this.recentFrequencies.length
+        const variance =
+            this.recentFrequencies.reduce(
+                (sum, freq) => sum + Math.pow(freq - meanFrequency, 2),
+                0
+            ) / this.recentFrequencies.length
+
+        // Adjust oscillator volume
+        if (variance < 10) {
+            // If variance is low reduce volume
+            this.oscillator.volume.value = Math.max(
+                this.oscillator.volume.value - 1,
+                -80
+            )
+        } else {
+            // If variance is high restore volume
+            this.oscillator.volume.value = Math.min(
+                this.oscillator.volume.value + 1,
+                -40
+            )
+        }
+    }
+
     calculateDesiredPosition(index) {
         const angle =
             index * (this.useGoldenAngle ? this.goldenAngle : this.customAngle)
@@ -680,93 +757,6 @@ export default class Flower {
         return { x, y }
     }
 
-    applySpringForce() {
-        let totalWeightedSpeed = 0
-        let totalWeight = 0
-
-        this.points.forEach((point, i) => {
-            const desired = this.calculateDesiredPosition(i)
-
-            // Calculate the spring force toward the desired position
-            const dx = desired.x - point.x
-            const dy = desired.y - point.y
-
-            // Apply the spring force
-            point.x += dx * this.springStrength
-            point.y += dy * this.springStrength
-
-            // Calculate the speed of the point
-            const speed = Math.sqrt(
-                Math.pow(point.x - (point.previousX || point.x), 2) +
-                    Math.pow(point.y - (point.previousY || point.y), 2)
-            )
-
-            // Use the square of the speed as the weight
-            const weight = speed * speed
-            totalWeightedSpeed += speed * weight
-            totalWeight += weight
-
-            // Update the previous position
-            point.previousX = point.x
-            point.previousY = point.y
-        })
-
-        // Calculate the weighted average speed
-        const weightedAverageSpeed =
-            totalWeight > 0 ? totalWeightedSpeed / totalWeight : 0
-
-        // Scale down the weighted average speed to reduce its impact
-        const scaledSpeed = weightedAverageSpeed * 0.2 // Adjust the factor (e.g., 0.2) as needed
-
-        // Map the scaled speed to a frequency range (e.g., 200 Hz to 800 Hz)
-        const minFrequency = 200
-        const maxFrequency = 800
-        const mappedFrequency =
-            minFrequency + scaledSpeed * (maxFrequency - minFrequency)
-
-        // Update the oscillator frequency
-        this.oscillator.frequency.value = Math.min(
-            mappedFrequency,
-            maxFrequency
-        )
-
-        // Track recent frequencies to calculate variance
-        if (!this.recentFrequencies) {
-            this.recentFrequencies = []
-        }
-        this.recentFrequencies.push(mappedFrequency)
-        if (this.recentFrequencies.length > 10) {
-            this.recentFrequencies.shift() // Keep only the last 10 frequencies
-        }
-
-        // Calculate variance of recent frequencies
-        const meanFrequency =
-            this.recentFrequencies.reduce((sum, freq) => sum + freq, 0) /
-            this.recentFrequencies.length
-        const variance =
-            this.recentFrequencies.reduce(
-                (sum, freq) => sum + Math.pow(freq - meanFrequency, 2),
-                0
-            ) / this.recentFrequencies.length
-
-        // Adjust oscillator volume based on frequency stability
-        if (variance < 10) {
-            // If variance is low, reduce volume
-            this.oscillator.volume.value = Math.max(
-                this.oscillator.volume.value - 1,
-                -80
-            ) // Gradually decrease volume to a minimum of -60 dB
-        } else {
-            // If variance is high, restore volume
-            this.oscillator.volume.value = Math.min(
-                this.oscillator.volume.value + 1,
-                -40
-            ) // Gradually increase volume to a maximum of -30 dB
-        }
-
-        // console.log(mappedFrequency, this.oscillator.volume.value)
-    }
-
     applyAttractionForce() {
         this.points.forEach((point) => {
             const dx = this.attractionPoint.x - point.x
@@ -774,10 +764,8 @@ export default class Flower {
             const distance = Math.sqrt(dx ** 2 + dy ** 2)
 
             if (distance < this.influenceRadius) {
-                // Calculate the influence factor (closer points have more influence)
                 const influence = 1 - distance / this.influenceRadius
 
-                // Apply the attraction force
                 point.x += dx * influence * this.attractionStrength
                 point.y += dy * influence * this.attractionStrength
             }
@@ -789,7 +777,7 @@ export default class Flower {
         const mouseX = event.clientX - rect.left
         const mouseY = event.clientY - rect.top
 
-        // Add the circle to the clickedCircles array with a finite lifetime
+        // Waves
         const newCircle = new Circle(
             mouseX,
             mouseY,
@@ -797,14 +785,14 @@ export default class Flower {
             "rgb(255, 255, 255)",
             this.opacity,
             false,
-            3, // Growth rate
-            300 // Lifetime (frames)
+            3,
+            300
         )
         this.clickedCircles.push(newCircle)
 
-        // Trigger the deep aquatic sound
-        const randomFrequency = Math.random() * 50 + 100 // Random frequency between 100Hz and 150Hz
-        this.deepSynth.triggerAttackRelease(randomFrequency, "2n") // Play the sound for a half note duration
+        // Deep sound when click
+        const randomFrequency = Math.random() * 50 + 100
+        this.deepSynth.triggerAttackRelease(randomFrequency, "2n")
 
         // Start dragging
         this.isDragging = true
@@ -816,14 +804,14 @@ export default class Flower {
             this.updateAttractionPoint(event)
         }
 
-        // --- Trigger note on hover (only once per event, with cooldown) ---
+        // Trigger note on hover
         const rect = this.ctx.canvas.getBoundingClientRect()
         const mouseX = event.clientX - rect.left
         const mouseY = event.clientY - rect.top
 
         const now = Date.now()
         if (now - this.lastHoverTriggerTime < this.hoverTriggerCooldown) {
-            return // Too soon since last hover-trigger
+            return
         }
 
         for (const point of this.points) {
@@ -833,7 +821,7 @@ export default class Flower {
             if (distance < this.hoverRadius) {
                 this.triggerPoint(point)
                 this.lastHoverTriggerTime = now
-                break // Stop after triggering one note
+                break
             }
         }
     }
