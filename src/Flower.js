@@ -98,15 +98,11 @@ export default class Flower {
         // Intersection Sampler
         this.intersectionSampler = new Tone.Sampler({
             urls: {
-                A2: "Dark_Glide_Bass_A2.mp3",
-                B2: "Dark_Glide_Bass_B2.mp3",
-                C2: "Dark_Glide_Bass_C2.mp3",
-                C3: "Dark_Glide_Bass_C3.mp3",
-                D2: "Dark_Glide_Bass_D2.mp3",
-                D3: "Dark_Glide_Bass_D3.mp3",
-                E2: "Dark_Glide_Bass_E2.mp3",
-                F2: "Dark_Glide_Bass_F2.mp3",
-                G2: "Dark_Glide_Bass_G2.mp3",
+                C2: "Marimba_C2.mp3",
+                C3: "Marimba_C3.mp3",
+                C4: "Marimba_C4.mp3",
+                F2: "Marimba_F2.mp3",
+                F3: "Marimba_F3.mp3",
             },
             release: 1,
             baseUrl: "/sounds/",
