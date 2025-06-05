@@ -131,6 +131,9 @@ export default class Flower {
         // Limiter
         this.limiter = new Tone.Limiter(-6) // Limit the output to -6 dB
 
+        // Intersection gain
+        this.intersectionGain = new Tone.Gain(0.5)
+
         // Connect hover sampler
         this.hoverSampler.chain(
             this.reverb,
@@ -151,6 +154,7 @@ export default class Flower {
 
         // Connect intersection sampler
         this.intersectionSampler.chain(
+            this.intersectionGain,
             this.reverb,
             this.delay,
             this.compressor,
