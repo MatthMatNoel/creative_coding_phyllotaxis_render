@@ -1,4 +1,5 @@
 import Circle from "./Circle.js"
+import * as Tone from "tone"
 
 export default class Wave {
     constructor(
@@ -22,6 +23,15 @@ export default class Wave {
         this.glowColor = glowColor
         this.hoverTriggerCooldown = hoverTriggerCooldown
         this.lastHoverTriggerTime = 0
+
+        this.popGain = new Tone.Gain(1).toDestination()
+        this.popPlayer = new Tone.Player({
+            url: "/sounds/Pop_01.mp3",
+            autostart: false,
+        }).connect(this.popGain)
+
+        // Track which pairs have already triggered the pop
+        this.intersectedPairs = new Set()
     }
 
     drawWave(mouseX, mouseY) {
@@ -118,11 +128,28 @@ export default class Wave {
                 const dy = c2.y - c1.y
                 const d = Math.sqrt(dx * dx + dy * dy)
 
+                // Unique key for this pair
+                const pairKey = `${i},${j}`
+
                 // Check if wave intersect
                 if (
                     d < c1.radius + c2.radius &&
                     d > Math.abs(c1.radius - c2.radius)
                 ) {
+                    // Only trigger pop if this is the first intersection
+                    if (!this.intersectedPairs.has(pairKey)) {
+                        const maxLifetime = 300
+                        const volume = Math.max(0.1, c1.lifetime / maxLifetime)
+                        this.popGain.gain.value = volume
+
+                        if (this.popPlayer.loaded) {
+                            this.popPlayer.playbackRate =
+                                Math.random() * 0.8 + 0.6
+                            this.popPlayer.start()
+                        }
+                        this.intersectedPairs.add(pairKey)
+                    }
+
                     // Find intersection points
                     const a =
                         (c1.radius * c1.radius -
@@ -186,6 +213,8 @@ export default class Wave {
                             break
                         }
                     }
+                } else {
+                    this.intersectedPairs.delete(pairKey)
                 }
             }
         }
