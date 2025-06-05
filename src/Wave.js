@@ -33,7 +33,7 @@ export default class Wave {
         })
         this.popLimiter = new Tone.Limiter(-6)
 
-        // Connect the chain: Player -> Gain -> Compressor -> Limiter -> Destination
+        // Connect
         this.popPlayer = new Tone.Player({
             url: "/sounds/Pop_01.mp3",
             autostart: false,
