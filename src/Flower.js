@@ -58,7 +58,45 @@ export default class Flower {
 
         this.wave = null
 
+        this.keyAngles = [
+            // Simple geometric symmetry
+            0.5236, // π/6      — 30°, triangle grid
+            0.6283, // 2π/10    — 36°, decagon star
+            0.6667, // 2π/9     — 40°, enneagon fractals
+            0.7854, // π/4      — 45°, square/diagonal cross
+            0.9425, // 3π/10    — 54°, star pattern
+            1.0472, // π/3      — 60°, hexagon tiling
+            1.2566, // 2π/5     — 72°, pentagon rotation
+            1.5708, // π/2      — 90°, perpendicular grid
+            1.884, // 3π/5     — 108°, fivefold starburst
+            2.0944, // 2π/3     — 120°, triangle repeat
+            2.2214, // π/√2     — folding spirals
+            2.3998, // Golden angle — 137.5°, sunflower vortex
+            2.5133, // 4π/5     — 144°, star-arm spacing
+            2.618, // π/φ      — irrational symmetry
+            3.0, // gentle spiral collapse
+            3.1255, // slightly less than π — tight reflection
+            3.1416, // π        — mirror fold
+            3.4, // asymmetric helix
+            3.618, // φ        — golden ratio expansion
+            3.9269, // 5π/4     — diagonal inverse
+            4.1888, // 4π/3     — triangular counter-rotation
+            4.398, // pseudo star-lattice
+            4.7124, // 3π/2     — mirrored Y-axis
+            5.0, // slow swirl rotation
+            5.236, // 5π/3     — sixfold flower
+            5.4, // fivefold radial bursts
+            5.6, // nested orbit
+            5.76, // inverted S symmetry
+            6.0, // almost full loop
+            6.2, // high-density near-loop
+            6.2831, // 2π       — total rotational overlap
+        ]
+        this.lastKeyAngleIndex = -1
+        this.useCoolColors = true
+
         this.setup()
+        this.setRandomBackgroundColors()
     }
 
     setup() {
@@ -340,6 +378,40 @@ export default class Flower {
     draw() {
         // Changing phyllotaxis angle
         this.customAngle += 0.00002
+        // console.log(this.customAngle)
+
+        // Check for key angle crossing
+        const idx = this.keyAngles.findIndex(
+            (angle) => Math.abs(this.customAngle - angle) < 0.00002
+        )
+        if (idx !== -1 && idx !== this.lastKeyAngleIndex) {
+            this.setRandomBackgroundColors()
+            this.lastKeyAngleIndex = idx
+
+            // Shift 1 or 2 notes in each chord by a semitone (up or down)
+            this.randomChords = this.randomChords.map((chord) => {
+                // Pick 1 or 2 unique indices
+                const numToShift = Math.random() < 0.5 ? 1 : 2
+                const indices = []
+                while (indices.length < numToShift) {
+                    const idx = Math.floor(Math.random() * chord.length)
+                    if (!indices.includes(idx)) indices.push(idx)
+                }
+                // Shift selected notes by +1 or -1 semitone
+                return chord.map((note, i) => {
+                    if (indices.includes(i)) {
+                        const semitone = Math.random() < 0.5 ? 1 : -1
+                        return this.shiftNoteBySemitones(note, semitone)
+                    }
+                    return note
+                })
+            })
+            // Reset current chord state to use new chords
+            this.currentRandomChordIndex = 0
+            this.currentRandomChord =
+                this.randomChords[this.currentRandomChordIndex]
+            this.currentRandomNoteIndex = 0
+        }
 
         // Breathing scale
         this.time += this.echelleOscillationSpeed
@@ -674,5 +746,132 @@ export default class Flower {
         const mouseX = event.clientX - rect.left
         const mouseY = event.clientY - rect.top
         this.attractionPoint = { x: mouseX, y: mouseY }
+    }
+
+    setRandomBackgroundColors() {
+        // Helper to parse rgba string to array
+        function parseRgba(rgba) {
+            return rgba.match(/[\d.]+/g).map(Number)
+        }
+        // Helper to interpolate between two rgba arrays
+        function lerpColor(a, b, t) {
+            return a.map((v, i) => v + (b[i] - v) * t)
+        }
+        // Helper to convert rgba array to string
+        function rgbaToString([r, g, b, a]) {
+            return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(
+                b
+            )}, ${a})`
+        }
+
+        // Color families
+        const coolHueRanges = [
+            [200, 260], // Blue
+        ]
+        const warmHueRanges = [
+            [20, 65], // Yellow
+        ]
+        const hueRanges = this.useCoolColors ? coolHueRanges : warmHueRanges
+        this.useCoolColors = !this.useCoolColors
+        const [hueMin, hueMax] =
+            hueRanges[Math.floor(Math.random() * hueRanges.length)]
+        const h = Math.floor(Math.random() * (hueMax - hueMin)) + hueMin
+        const s = Math.floor(Math.random() * 30) + 40
+        const l = Math.floor(Math.random() * 15) + 10
+
+        function hslToRgba({ h, s, l }, alpha = 1) {
+            s /= 100
+            l /= 100
+            const k = (n) => (n + h / 30) % 12
+            const a = s * Math.min(l, 1 - l)
+            const f = (n) =>
+                l - a * Math.max(-1, Math.min(Math.min(k(n) - 3, 9 - k(n)), 1))
+            const r = Math.round(255 * f(0))
+            const g = Math.round(255 * f(8))
+            const b = Math.round(255 * f(4))
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`
+        }
+
+        const base = { h, s, l }
+        const lighter = { ...base, l: Math.min(base.l + 25, 100) }
+        const darker = { ...base, l: Math.max(base.l - 5, 8) }
+
+        // Get current colors
+        const root = document.documentElement
+        const style = getComputedStyle(root)
+        const current1 = parseRgba(
+            style.getPropertyValue("--background_color1")
+        )
+        const current2 = parseRgba(
+            style.getPropertyValue("--background_color2")
+        )
+        const current3 = parseRgba(
+            style.getPropertyValue("--background_color3")
+        )
+
+        // Target colors
+        const target1 = parseRgba(hslToRgba(lighter))
+        const target2 = parseRgba(hslToRgba(base))
+        const target3 = parseRgba(hslToRgba(darker))
+
+        // Animate transition
+        const duration = 500 // ms
+        const steps = 30
+        let frame = 0
+
+        function animate() {
+            frame++
+            const t = Math.min(frame / steps, 1)
+            root.style.setProperty(
+                "--background_color1",
+                rgbaToString(lerpColor(current1, target1, t))
+            )
+            root.style.setProperty(
+                "--background_color2",
+                rgbaToString(lerpColor(current2, target2, t))
+            )
+            root.style.setProperty(
+                "--background_color3",
+                rgbaToString(lerpColor(current3, target3, t))
+            )
+            if (t < 1) {
+                requestAnimationFrame(animate)
+            }
+        }
+        animate()
+    }
+
+    shiftNoteBySemitones(note, semitones) {
+        // Chromatic scale
+        const scale = [
+            "C",
+            "C#",
+            "D",
+            "D#",
+            "E",
+            "F",
+            "F#",
+            "G",
+            "G#",
+            "A",
+            "A#",
+            "B",
+        ]
+        const match = note.match(/^([A-G]#?)(\d)$/)
+        if (!match) return note
+        let [, name, octave] = match
+        octave = parseInt(octave)
+        let idx = scale.indexOf(name)
+        if (idx === -1) return note
+        let newIdx = idx + semitones
+        while (newIdx < 0) {
+            newIdx += 12
+            octave -= 1
+        }
+        while (newIdx > 11) {
+            newIdx -= 12
+            octave += 1
+        }
+        return `${scale[newIdx]}${octave}`
     }
 }

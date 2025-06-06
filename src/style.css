@@ -1,3 +1,9 @@
+:root {
+  --background_color1: rgba(114, 145, 166, 1);
+  --background_color2: rgba(18, 65, 99, 1);
+  --background_color3: rgba(9, 32, 49, 1);
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -8,7 +14,7 @@ html {
 }
 
 body {
-  background: radial-gradient(circle, rgba(114, 145, 166, 1) 0%, rgba(18, 65, 99, 1) 30%, rgba(9, 32, 49, 1) 55%, rgba(0, 0, 0, 1) 87%);
+  background: radial-gradient(circle, var(--background_color1) 0%, var(--background_color2) 30%, var(--background_color3) 55%, rgba(0, 0, 0, 1) 87%);
 }
 
 .blur {
