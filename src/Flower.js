@@ -388,24 +388,12 @@ export default class Flower {
             this.setRandomBackgroundColors()
             this.lastKeyAngleIndex = idx
 
-            // Shift 1 or 2 notes in each chord by a semitone (up or down)
-            this.randomChords = this.randomChords.map((chord) => {
-                // Pick 1 or 2 unique indices
-                const numToShift = Math.random() < 0.5 ? 1 : 2
-                const indices = []
-                while (indices.length < numToShift) {
-                    const idx = Math.floor(Math.random() * chord.length)
-                    if (!indices.includes(idx)) indices.push(idx)
-                }
-                // Shift selected notes by +1 or -1 semitone
-                return chord.map((note, i) => {
-                    if (indices.includes(i)) {
-                        const semitone = Math.random() < 0.5 ? 1 : -1
-                        return this.shiftNoteBySemitones(note, semitone)
-                    }
-                    return note
-                })
-            })
+            const randomFrequency = Math.random() * 50 + 100
+            this.deepSynth.triggerAttackRelease(randomFrequency, "2n")
+
+            // Shuffle the order of randomChords
+            this.randomChords = this.shuffleArray([...this.randomChords])
+
             // Reset current chord state to use new chords
             this.currentRandomChordIndex = 0
             this.currentRandomChord =
@@ -766,10 +754,11 @@ export default class Flower {
 
         // Color families
         const coolHueRanges = [
-            [200, 260], // Blue
+            [200, 230], // Blue
         ]
         const warmHueRanges = [
-            [20, 65], // Yellow
+            [140, 200], // Green
+            // [20, 65], // Orange
         ]
         const hueRanges = this.useCoolColors ? coolHueRanges : warmHueRanges
         this.useCoolColors = !this.useCoolColors
@@ -841,37 +830,11 @@ export default class Flower {
         animate()
     }
 
-    shiftNoteBySemitones(note, semitones) {
-        // Chromatic scale
-        const scale = [
-            "C",
-            "C#",
-            "D",
-            "D#",
-            "E",
-            "F",
-            "F#",
-            "G",
-            "G#",
-            "A",
-            "A#",
-            "B",
-        ]
-        const match = note.match(/^([A-G]#?)(\d)$/)
-        if (!match) return note
-        let [, name, octave] = match
-        octave = parseInt(octave)
-        let idx = scale.indexOf(name)
-        if (idx === -1) return note
-        let newIdx = idx + semitones
-        while (newIdx < 0) {
-            newIdx += 12
-            octave -= 1
+    shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1))
+            ;[array[i], array[j]] = [array[j], array[i]]
         }
-        while (newIdx > 11) {
-            newIdx -= 12
-            octave += 1
-        }
-        return `${scale[newIdx]}${octave}`
+        return array
     }
 }
